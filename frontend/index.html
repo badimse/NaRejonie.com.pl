@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Na Rejonie - Sklep Odzieżowy</title>
+    <link rel="stylesheet" href="css/style.css">
+
+    <link rel="icon" type="image/png" href="favicon.png">
+</head>
+<body>
+    <!-- Nawigacja -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="logo">
+                <img src="img/logo.png" alt="Na Rejonie Logo" class="logo-img">
+            </a>
+            <div class="nav-right">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Szukaj produktów...">
+                    <button class="search-btn">🔍</button>
+                </div>
+                <div class="nav-actions">
+                    <button class="cart-btn" id="cartBtn">
+                        🛒 Koszyk <span id="cartCount" class="cart-count">0</span>
+                    </button>
+                    <div class="user-menu" id="userMenu" style="display: none;">
+                        <span class="user-name" id="userName"></span>
+                        <button id="ordersBtn">Zamówienia</button>
+                        <button id="logoutBtn">Wyloguj</button>
+                    </div>
+                    <button class="login-btn" id="loginBtn">Zaloguj</button>
+                    <button class="login-btn register-btn" id="registerBtn">Zarejestruj</button>
+                    <a href="admin.html" class="login-btn" id="adminLink" style="display: none;">Panel Admina</a>
+                </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>NOWA KOLEKCJA 2026</h1>
+            <p>Odkryj najnowsze trendy w modzie ulicznej</p>
+            <div class="hero-buttons">
+                <a href="#produkty" class="btn btn-primary">Zobacz produkty</a>
+                <a href="#nowa-kolekcja" class="btn btn-secondary">Nowa kolekcja</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Kategorie -->
+    <section class="categories" id="nowa-kolekcja">
+        <h2>Kategorie</h2>
+        <div class="category-grid">
+            <div class="category-card" data-kategoria="bluzy">
+                <h3>Bluzy</h3>
+            </div>
+            <div class="category-card" data-kategoria="t-shirty">
+                <h3>T-shirty</h3>
+            </div>
+            <div class="category-card" data-kategoria="spodnie">
+                <h3>Spodnie</h3>
+            </div>
+            <div class="category-card" data-kategoria="akcesoria">
+                <h3>Akcesoria</h3>
+            </div>
+        </div>
+    </section>
+
+    <!-- Produkty -->
+    <section class="products" id="produkty">
+        <h2>Produkty</h2>
+        <div class="filter-buttons">
+            <button class="filter-btn active" data-kategoria="">Wszystkie</button>
+            <button class="filter-btn" data-kategoria="bluzy">Bluzy</button>
+            <button class="filter-btn" data-kategoria="t-shirty">T-shirty</button>
+            <button class="filter-btn" data-kategoria="spodnie">Spodnie</button>
+            <button class="filter-btn" data-kategoria="akcesoria">Akcesoria</button>
+        </div>
+        <div class="products-grid" id="productsGrid">
+            <!-- Produkty będą ładowane dynamicznie -->
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>Na Rejonie</h4>
+                <p>Twój sklep z modą uliczną</p>
+            </div>
+            <div class="footer-section">
+                <h4>Kontakt</h4>
+                <p>Email: kontakt@narejonie.pl</p>
+                <p>Tel: +48 123 456 789</p>
+            </div>
+            <div class="footer-section">
+                <h4>Godziny otwarcia</h4>
+                <p>Pn-Pt: 9:00 - 18:00</p>
+                <p>Sb: 10:00 - 14:00</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Na Rejonie. Wszelkie prawa zastrzeżone.</p>
+        </div>
+    </footer>
+
+    <!-- Modal Logowania -->
+    <div class="modal" id="loginModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModals()">&times;</button>
+            <div class="modal-logo">
+                <img src="img/logo.png" alt="Na Rejonie Logo" class="modal-logo-img">
+            </div>
+            <h2>Logowanie</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Hasło</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Zaloguj</button>
+            </form>
+            <p class="modal-footer">Nie masz konta? <a href="#" class="register-trigger">Zarejestruj się</a></p>
+        </div>
+    </div>
+
+    <!-- Modal Rejestracji -->
+    <div class="modal" id="registerModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModals()">&times;</button>
+            <div class="modal-logo">
+                <img src="img/logo.png" alt="Na Rejonie Logo" class="modal-logo-img">
+            </div>
+            <h2>Rejestracja</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="registerImie">Imię</label>
+                    <input type="text" id="registerImie" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerNazwisko">Nazwisko</label>
+                    <input type="text" id="registerNazwisko" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input type="email" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Hasło</label>
+                    <input type="password" id="registerPassword" required minlength="8">
+                </div>
+                <div class="form-group">
+                    <label for="registerPasswordConfirm">Powtórz hasło</label>
+                    <input type="password" id="registerPasswordConfirm" required minlength="8">
+                </div>
+                <button type="submit" class="btn btn-primary">Zarejestruj</button>
+            </form>
+            <p class="modal-footer">Masz już konto? <a href="#" class="login-trigger">Zaloguj się</a></p>
+        </div>
+    </div>
+
+    <!-- Modal Koszyka -->
+    <div class="modal" id="cartModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-large">
+            <button class="modal-close" onclick="closeModals()">&times;</button>
+            <h2>Twój Koszyk</h2>
+            <div id="cartContent"></div>
+        </div>
+    </div>
+
+    <!-- Modal Checkout -->
+    <div class="modal" id="checkoutModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModals()">&times;</button>
+            <h2>Dane dostawy</h2>
+            <form id="checkoutForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="checkoutUlica">Ulica i numer</label>
+                        <input type="text" id="checkoutUlica" required placeholder="np. ul. Długa 15/2">
+                    </div>
+                    <div class="form-group">
+                        <label for="checkoutMiasto">Miasto</label>
+                        <input type="text" id="checkoutMiasto" required placeholder="np. Warszawa">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="checkoutKod">Kod pocztowy</label>
+                        <input type="text" id="checkoutKod" required placeholder="np. 00-001">
+                    </div>
+                    <div class="form-group">
+                        <label for="checkoutKraj">Kraj</label>
+                        <input type="text" id="checkoutKraj" value="Polska" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">Złóż zamówienie</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Historii Zamówień -->
+    <div class="modal" id="orderHistoryModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-large">
+            <button class="modal-close" onclick="closeModals()">&times;</button>
+            <h2>Historia Zamówień</h2>
+            <div class="order-filters" style="margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="filter-btn active" data-status="">Wszystkie</button>
+                <button class="filter-btn" data-status="oczekujące">Oczekujące</button>
+                <button class="filter-btn" data-status="w realizacji">W realizacji</button>
+                <button class="filter-btn" data-status="wysłane">Wysłane</button>
+                <button class="filter-btn" data-status="zakończone">Zakończone</button>
+                <button class="filter-btn" data-status="anulowane">Anulowane</button>
+            </div>
+            <div id="orderHistoryContent"></div>
+        </div>
+    </div>
+
+    <!-- Modal Potwierdzenia Zamówienia -->
+    <div class="modal" id="orderConfirmationModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModals()">&times;</button>
+            <div id="orderConfirmationContent"></div>
+        </div>
+    </div>
+
+    <!-- Modal Szczegółów Produktu -->
+    <div class="modal" id="productDetailModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content modal-large">
+            <button class="modal-close" onclick="closeModals()">&times;</button>
+            <div id="productDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- Modal Zwrotu -->
+    <div class="modal" id="returnModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModals()">&times;</button>
+            <h2>Zgłoś zwrot</h2>
+            <form id="returnForm">
+                <input type="hidden" id="returnOrderId">
+                <div class="form-group">
+                    <label for="returnReason">Powód zwrotu</label>
+                    <textarea id="returnReason" rows="4" required minlength="10" placeholder="Opisz powód zwrotu (minimum 10 znaków)"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Zgłoś zwrot</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
