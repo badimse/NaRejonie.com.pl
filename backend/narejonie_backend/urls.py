@@ -19,11 +19,12 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import RedirectView
+from django.views.generic import TemplateView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', include('api.urls')),
-    path('', RedirectView.as_view(url='api/', permanent=False)),
+    path('admin/', admin.site.urls),  # Systemowy admin Django
+    path('api/', include('api.urls')), # To jest KLUCZ: dodaj 'api/' tutaj
+    path('', TemplateView.as_view(template_name='index.html'), name='home'),
 ]
 
 # Obsługa plików medialnych w trybie development

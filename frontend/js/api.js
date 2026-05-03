@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'https://narejonie.com.pl/api';
+const API_BASE_URL = '/api';
 
 // Token management
 function getAuthToken() {

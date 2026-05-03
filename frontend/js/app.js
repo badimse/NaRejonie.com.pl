@@ -90,11 +90,34 @@ function createProductCard(product) {
     const cena = parseFloat(product.cenaBrutto) || 0;
     const imageUrl = product.zdjecie_url || 'https://via.placeholder.com/300x400?text=Brak+zdjecia';
     
-    // Generuj przyciski rozmiarów
-    console.log('Generowanie przycisków dla:', product.nazwa, 'rozmiary:', product.rozmiary);
-    const sizesHtml = product.rozmiary && product.rozmiary.length > 0 ? product.rozmiary.map(r => {
+    // --- NOWA LOGIKA SORTOWANIA ---
+    const order = { 'XS': 1, 'S': 2, 'M': 3, 'L': 4, 'XL': 5, 'XXL': 6, 'XXXL': 7 };
+
+    const sortedSizes = product.rozmiary ? [...product.rozmiary].sort((a, b) => {
+        const valA = a.rozmiar.toUpperCase();
+        const valB = b.rozmiar.toUpperCase();
+        
+        // Jeśli oba rozmiary są w naszym słowniku wag (XS-XXL)
+        if (order[valA] && order[valB]) {
+            return order[valA] - order[valB];
+        }
+        
+        // Jeśli to rozmiary liczbowe (np. 36, 38)
+        const numA = parseInt(valA);
+        const numB = parseInt(valB);
+        if (!isNaN(numA) && !isNaN(numB)) {
+            return numA - numB;
+        }
+
+        // Domyślnie alfabetycznie
+        return valA.localeCompare(valB);
+    }) : [];
+    // --- KONIEC SORTOWANIA ---
+
+    // Generuj przyciski rozmiarów z POSORTOWANEJ listy
+    console.log('Generowanie przycisków dla:', product.nazwa, 'rozmiary:', sortedSizes);
+    const sizesHtml = sortedSizes.length > 0 ? sortedSizes.map(r => {
         const isAvailable = r.stanMagazynowy > 0;
-        console.log('  Rozmiar:', r.rozmiar, 'stan:', r.stanMagazynowy, 'available:', isAvailable);
         return `<button class="size-btn ${isAvailable ? '' : 'size-unavailable'}" 
                         data-rozmiar="${r.rozmiar}" 
                         data-stan="${r.stanMagazynowy}"
@@ -103,7 +126,6 @@ function createProductCard(product) {
                     ${r.rozmiar}
                 </button>`;
     }).join('') : '';
-    console.log('sizesHtml:', sizesHtml);
     
     return `
         <div class="product-card" data-id="${product.id_produkt}">
@@ -171,15 +193,24 @@ async function handleAddToCart(produktId, ilosc = 1, rozmiar = null) {
     }
     
     try {
-        // Jeśli podano rozmiar, użyj zmodyfikowanej funkcji
+        let result; // Tworzymy zmienną na dane z serwera
+
+        // Wywołujemy API i zapisujemy odpowiedź do 'result'
         if (rozmiar) {
-            const result = await addToCartWithSize(produktId, ilosc, rozmiar);
-            showToast('Dodano do koszyka!', 'success');
+            result = await addToCartWithSize(produktId, ilosc, rozmiar);
         } else {
-            await addToCart(produktId, ilosc);
-            showToast('Dodano do koszyka!', 'success');
+            result = await addToCart(produktId, ilosc);
         }
-        updateCartCount();
+
+        // Jeśli udało się dodać:
+        showToast('Dodano do koszyka!', 'success');
+        updateCartCount(); // To aktualizuje cyferkę na przycisku
+
+        // WYWOŁANIE PODGLĄDU (to okienko pod nagłówkiem)
+        if (result) {
+            showCartDropdownPreview(result);
+        }
+
     } catch (error) {
         showToast(error.message || 'Nie udało się dodać do koszyka', 'error');
     }
@@ -818,3 +849,38 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+function showCartDropdownPreview(cartData) {
+    const dropdown = document.getElementById('cartDropdown');
+    const container = document.getElementById('cartDropdownItems');
+    const totalEl = document.getElementById('cartDropdownTotal');
+
+    if (!dropdown || !container) return;
+
+    container.innerHTML = '';
+    const pozycje = cartData.pozycje || [];
+    const recentItems = [...pozycje].reverse().slice(0, 3);
+
+    recentItems.forEach(item => {
+        const itemTotal = (parseFloat(item.cenaJednostkowa || 0) * item.ilosc).toFixed(2);
+        container.innerHTML += `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0;">
+                <div style="text-align: left;">
+                    <div style="font-weight: bold; font-size: 14px; color: #1a1a1a;">${item.produkt_nazwa || 'Produkt'}</div>
+                    <div style="font-size: 12px; color: #888;">Rozmiar: ${item.rozmiar || '—'} | Ilość: ${item.ilosc}</div>
+                </div>
+                <div style="font-weight: bold; color: #000; font-size: 14px;">${itemTotal} zł</div>
+            </div>
+        `;
+    });
+
+    const totalSuma = pozycje.reduce((acc, curr) => acc + (parseFloat(curr.cenaJednostkowa || 0) * curr.ilosc), 0);
+    if (totalEl) totalEl.innerText = totalSuma.toFixed(2) + ' zł';
+
+    dropdown.style.display = 'block';
+
+    clearTimeout(window.cartDropdownTimeout);
+    window.cartDropdownTimeout = setTimeout(() => {
+        dropdown.style.display = 'none';
+    }, 4000);
+}

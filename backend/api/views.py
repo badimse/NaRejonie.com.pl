@@ -384,25 +384,27 @@ class ZamowienieViewSet(viewsets.ModelViewSet):
             )
         
         try:
-            line_items = [] # <-- Lista produktów dla Stripe
+            line_items = []
             
             with transaction.atomic():
                 kwota_calkowita = 0
                 
-                # Sprawdzanie dostępności
+                # 1. Wstępne sprawdzenie dostępności (bez odejmowania!)
                 for pozycja in pozycje_koszyka:
-                    produkt = Produkt.objects.select_for_update().get(
-                        id_produkt=pozycja.id_produkt_id
-                    )
-                    total_stock = sum(r.stanMagazynowy for r in produkt.rozmiary.select_for_update().all())
-                    if total_stock < pozycja.ilosc:
+                    # Szukamy konkretnego rozmiaru wybranego przez klienta
+                    rozmiar_obj = RozmiarProduktu.objects.filter(
+                        id_produkt=pozycja.id_produkt, 
+                        rozmiar=pozycja.rozmiar
+                    ).first()
+
+                    if not rozmiar_obj or rozmiar_obj.stanMagazynowy < pozycja.ilosc:
                         raise ValueError(
-                            f"Niewystarczająca ilość produktu: {produkt.nazwa}"
+                            f"Niewystarczająca ilość produktu: {pozycja.id_produkt.nazwa} (rozmiar {pozycja.rozmiar})"
                         )
                     
                     kwota_calkowita += pozycja.ilosc * pozycja.cenaJednostkowa
                 
-                # Utwórz zamówienie w bazie (pozostaje jako "oczekujące")
+                # 2. Utwórz zamówienie
                 zamowienie = Zamowienie.objects.create(
                     id_uzytkownik=request.user,
                     status='oczekujące',
@@ -411,45 +413,29 @@ class ZamowienieViewSet(viewsets.ModelViewSet):
                 
                 adres_serializer.save(id_zamowienie=zamowienie)
                 
-                # Przepisanie pozycji i budowanie listy dla Stripe
+                # 3. Przepisanie pozycji - KLUCZOWA ZMIANA: zapisujemy rozmiar!
                 for pozycja in pozycje_koszyka:
                     PozycjaZamowienia.objects.create(
                         id_zamowienie=zamowienie,
                         id_produkt=pozycja.id_produkt,
+                        rozmiar=pozycja.rozmiar, # <-- To pole właśnie dodaliśmy do bazy
                         ilosc=pozycja.ilosc,
                         cenaJednostkowa=pozycja.cenaJednostkowa
                     )
                     
-                    # DODANE: Budujemy element koszyka dla Stripe
-                    # Stripe wymaga podania ceny w najmniejszej jednostce (czyli w groszach)
+                    # Przygotowanie danych dla Stripe
                     line_items.append({
                         'price_data': {
                             'currency': 'pln',
                             'product_data': {
-                                'name': pozycja.id_produkt.nazwa,
+                                'name': f"{pozycja.id_produkt.nazwa} (Rozmiar: {pozycja.rozmiar})",
                             },
                             'unit_amount': int(pozycja.cenaJednostkowa * 100), 
                         },
                         'quantity': pozycja.ilosc,
                     })
-                    
-                    # Zmniejszanie stanu magazynowego
-                    produkt = pozycja.id_produkt
-                    ilosc_do_odjecia = pozycja.ilosc
-                    for rozmiar in produkt.rozmiary.select_for_update().all():
-                        if ilosc_do_odjecia <= 0:
-                            break
-                        if rozmiar.stanMagazynowy > 0:
-                            if rozmiar.stanMagazynowy >= ilosc_do_odjecia:
-                                rozmiar.stanMagazynowy -= ilosc_do_odjecia
-                                rozmiar.save()
-                                ilosc_do_odjecia = 0
-                            else:
-                                ilosc_do_odjecia -= rozmiar.stanMagazynowy
-                                rozmiar.stanMagazynowy = 0
-                                rozmiar.save()
                 
-                # Wyczyść koszyk na sam koniec
+                # 4. Czyścimy koszyk (użytkownik przeszedł do płatności)
                 pozycje_koszyka.delete()
 
             # --- INTEGRACJA Z BRAMKĄ STRIPE ---
@@ -776,40 +762,75 @@ from .models import Zamowienie
 
 @csrf_exempt
 def stripe_webhook(request):
-    """
-    Funkcja odbierająca ciche powiadomienia (Webhooki) ze Stripe.
-    """
     payload = request.body
     sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
     endpoint_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
 
     try:
-        # Stripe weryfikuje, czy to na pewno on wysłał to zapytanie (bezpieczeństwo!)
-        event = stripe.Webhook.construct_event(
-            payload, sig_header, endpoint_secret
-        )
-    except ValueError as e:
-        # Błędny payload
-        return HttpResponse(status=400)
-    except stripe.error.SignatureVerificationError as e:
-        # Błędny podpis (próba oszustwa)
+        event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
+    except Exception:
         return HttpResponse(status=400)
 
-    # Jeśli płatność zakończyła się pełnym sukcesem
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        
-        # Wyciągamy nasz numer zamówienia, który podaliśmy w checkout_session
         zamowienie_id = session.client_reference_id
 
         if zamowienie_id:
             try:
-                zamowienie = Zamowienie.objects.get(id_zamowienie=zamowienie_id)
-                # ZMIANA STATUSU PO OPŁACENIU!
-                # Zmieniamy status na "w realizacji", co oznacza dla admina: "Opłacone, pakuj towar!"
-                zamowienie.status = 'w realizacji'
-                zamowienie.save()
+                with transaction.atomic():
+                    zamowienie = Zamowienie.objects.get(id_zamowienie=zamowienie_id)
+                    zamowienie.status = 'w realizacji'
+                    zamowienie.save()
+
+                    # AKTUALIZACJA MAGAZYNU
+                    for pozycja in zamowienie.pozycje.all():
+                        # Szukamy konkretnego rozmiaru dla tego produktu
+                        wariant = RozmiarProduktu.objects.filter(
+                            id_produkt=pozycja.id_produkt, 
+                            rozmiar=pozycja.rozmiar
+                        ).first()
+                        
+                        if wariant:
+                            wariant.stanMagazynowy -= pozycja.ilosc
+                            wariant.save()
+                            print(f"Odjęto {pozycja.ilosc} szt. rozmiaru {pozycja.rozmiar} dla {pozycja.id_produkt.nazwa}")
+            
             except Zamowienie.DoesNotExist:
                 pass
+            except Exception as e:
+                print(f"Błąd Webhooka: {e}")
+
+    return HttpResponse(status=200)
+
+    # Jeśli płatność zakończyła się pełnym sukcesem
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        zamowienie_id = session.client_reference_id
+
+        if zamowienie_id:
+            try:
+                # Pobieramy zamówienie
+                zamowienie = Zamowienie.objects.get(id_zamowienie=zamowienie_id)
+                
+                # 1. Zmiana statusu
+                zamowienie.status = 'w realizacji'
+                zamowienie.save()
+
+                # 2. AKTUALIZACJA MAGAZYNU
+                # Korzystamy z related_name='pozycje', które masz w modelu!
+                for pozycja in zamowienie.pozycje.all():
+                    # Pobieramy konkretny wariant rozmiaru przypisany do tej pozycji
+                    # UWAGA: Upewnij się, że w PozycjaZamowienia masz pole id_rozmiar
+                    wariant = pozycja.id_rozmiar 
+                    
+                    if wariant:
+                        # Odejmujemy ilość z zamówienia od stanu magazynowego
+                        wariant.stanMagazynowy -= pozycja.ilosc
+                        wariant.save()
+                        
+            except Zamowienie.DoesNotExist:
+                print(f"Błąd: Zamówienie {zamowienie_id} nie istnieje.")
+            except Exception as e:
+                print(f"Błąd podczas aktualizacji magazynu: {e}")
 
     return HttpResponse(status=200)

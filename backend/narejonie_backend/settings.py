@@ -32,13 +32,17 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['96.9.214.91', 'narejonie.com.pl', 'www.narejonie.com.pl', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['narejonie.com.pl', 'www.narejonie.com.pl']
 # Ustawienia dla obsługi HTTPS przez Proxy (Nginx)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = False
+SECURE_SSL_REDIRECT = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 SESSION_COOKIE_SECURE = False
-CSRF_COOKIE_SECURE = False
 
+# Adresy domen wpisujemy TUTAJ:
+CSRF_TRUSTED_ORIGINS = ["https://narejonie.com.pl",
+    "https://www.narejonie.com.pl"]
 
 # Application definition
 
@@ -71,7 +75,10 @@ MIDDLEWARE = [
 ]
 
 # CORS settings
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = [
+    "http://narejonie.com.pl",
+    "https://wwww.narejonie.com.pl",
+] 
 CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'narejonie_backend.urls'
@@ -79,10 +86,11 @@ ROOT_URLCONF = 'narejonie_backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, '../frontend/')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
@@ -162,6 +170,10 @@ REST_FRAMEWORK = {
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    '/var/www/moj_projekt/frontend',
+]
+
 # Media files (uploaded by users)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

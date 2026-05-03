@@ -15,31 +15,57 @@
 <body>
     <!-- Nawigacja -->
     <nav class="navbar">
-        <div class="nav-container">
-            <a href="#" class="logo">
-                <img src="img/logo.png" alt="Na Rejonie Logo" class="logo-img">
-            </a>
-            <div class="nav-right">
-                <div class="search-box">
-                    <input type="text" id="searchInput" placeholder="Szukaj produktów...">
-                    <button class="search-btn">🔍</button>
-                </div>
-                <div class="nav-actions">
-                    <button class="cart-btn" id="cartBtn">
-                        🛒 Koszyk <span id="cartCount" class="cart-count">0</span>
-                    </button>
-                    <div class="user-menu" id="userMenu" style="display: none;">
-                        <span class="user-name" id="userName"></span>                      
-                        <button id="ordersBtn">Zamówienia</button>
-                        <button id="openPasswordModal" type="button" onclick="window.handleOpenPasswordModal()">Zmień hasło</button>
-                        <button id="logoutBtn">Wyloguj</button>
-                    </div>
-                    <button class="login-btn" id="loginBtn">Zaloguj</button>
-                    <button class="login-btn register-btn" id="registerBtn">Zarejestruj</button>
-                    <a href="admin.html" class="login-btn" id="adminLink" style="display: none;">Panel Admina</a>
-                </div>
-                </div></div></nav>
+    <div class="nav-container">
+        <a href="#" class="logo">
+            <img src="img/logo.png" alt="Na Rejonie Logo" class="logo-img">
+        </a>
+        
+        <div class="nav-right">
+            <!-- Wyszukiwarka -->
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Szukaj produktów...">
+                <button class="search-btn">🔍</button>
+            </div>
 
+            <!-- Koszyk (Poprawnie opakowany!) -->
+            <div class="cart-wrapper" style="position: relative; display: inline-block;">
+                <button class="cart-btn" id="cartBtn">
+                    🛒 Koszyk <span id="cartCount" class="cart-count">0</span>
+                </button>
+
+                <div id="cartDropdown" style="display: none; position: absolute; top: 120%; right: 0; width: 300px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); z-index: 10000; padding: 15px; border: 1px solid #eee;">
+                    <h4 style="margin: 0; color: #333; font-size: 16px;">Dodano do koszyka!</h4>
+                    <div id="cartDropdownItems" style="margin: 10px 0;"></div>
+                    
+                    <div id="cartDropdownFooter" style="border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px;">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px;">
+                            <span>Suma:</span>
+                            <span id="cartDropdownTotal">0.00 zł</span>
+                        </div>
+                        <button onclick="document.getElementById('cartDropdown').style.display='none'; document.getElementById('cartBtn').click();" 
+                                style="width: 100%; background: #000; color: #fff; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">
+                            Zobacz pełny koszyk
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menu Użytkownika -->
+            <div class="user-menu-wrapper" style="display: flex; align-items: center; gap: 10px;">
+                <div class="user-menu" id="userMenu" style="display: none;">
+                    <span class="user-name" id="userName"></span>                      
+                    <button id="ordersBtn">Zamówienia</button>
+                    <button id="openPasswordModal" type="button" onclick="window.handleOpenPasswordModal()">Zmień hasło</button>
+                    <button id="logoutBtn">Wyloguj</button>
+                </div>
+                
+                <button class="login-btn" id="loginBtn">Zaloguj</button>
+                <button class="login-btn register-btn" id="registerBtn">Zarejestruj</button>
+                <a href="/moj-admin/" class="login-btn" id="adminLink" style="display: none;">Panel Admina</a>
+            </div>
+        </div> <!-- Zamknięcie nav-right -->
+    </div> <!-- Zamknięcie nav-container -->
+</nav>
 
     <!-- Hero Section -->
     <section class="hero">
